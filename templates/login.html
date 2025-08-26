@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login - Annotator</title>
+    <style>
+      body { 
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; 
+        margin: 0; 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .login-container {
+        background: white;
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+      }
+      .logo {
+        font-size: 32px;
+        margin-bottom: 8px;
+      }
+      .title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 32px;
+      }
+      .form-container {
+        margin-bottom: 24px;
+      }
+      .form-group {
+        margin-bottom: 20px;
+        text-align: left;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #555;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+      }
+      .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+      .submit-btn {
+        width: 100%;
+        padding: 14px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .submit-btn:hover {
+        background: #5a6fd8;
+      }
+      .toggle-container {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid #e1e5e9;
+      }
+      .toggle-text {
+        color: #666;
+        margin-bottom: 16px;
+      }
+      .toggle-btn {
+        background: none;
+        border: 2px solid #667eea;
+        color: #667eea;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+      .toggle-btn:hover {
+        background: #667eea;
+        color: white;
+      }
+      .error-message {
+        color: #dc3545;
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        display: none;
+      }
+      .success-message {
+        color: #155724;
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="logo">🚗</div>
+      <div class="title" id="pageTitle">Welcome to Annotator</div>
+      
+      <div class="error-message" id="errorMessage"></div>
+      <div class="success-message" id="successMessage"></div>
+      
+      <!-- Login Form -->
+      <form id="loginForm" class="form-container">
+        <div class="form-group">
+          <label for="loginUsername">Username</label>
+          <input type="text" id="loginUsername" name="username" placeholder="Enter your username" required>
+        </div>
+        <button type="submit" class="submit-btn">Login</button>
+      </form>
+      
+      <!-- Register Form -->
+      <form id="registerForm" class="form-container" style="display: none;">
+        <div class="form-group">
+          <label for="registerUsername">Username</label>
+          <input type="text" id="registerUsername" name="username" placeholder="Choose a username" required>
+        </div>
+        <button type="submit" class="submit-btn">Register</button>
+      </form>
+      
+      <div class="toggle-container">
+        <div class="toggle-text" id="toggleText">Don't have an account?</div>
+        <button type="button" class="toggle-btn" id="toggleBtn">Register</button>
+      </div>
+    </div>
+
+    <script>
+      const loginForm = document.getElementById('loginForm');
+      const registerForm = document.getElementById('registerForm');
+      const toggleBtn = document.getElementById('toggleBtn');
+      const toggleText = document.getElementById('toggleText');
+      const pageTitle = document.getElementById('pageTitle');
+      const errorMessage = document.getElementById('errorMessage');
+      const successMessage = document.getElementById('successMessage');
+      
+      let isLoginMode = true;
+      
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+      }
+      
+      function showSuccess(message) {
+        successMessage.textContent = message;
+        successMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+      }
+      
+      function clearMessages() {
+        errorMessage.style.display = 'none';
+        successMessage.style.display = 'none';
+      }
+      
+      function toggleMode() {
+        isLoginMode = !isLoginMode;
+        
+        if (isLoginMode) {
+          // Switch to Login
+          loginForm.style.display = 'block';
+          registerForm.style.display = 'none';
+          toggleBtn.textContent = 'Register';
+          toggleText.textContent = "Don't have an account?";
+          pageTitle.textContent = 'Welcome Back';
+          clearMessages();
+        } else {
+          // Switch to Register
+          loginForm.style.display = 'none';
+          registerForm.style.display = 'block';
+          toggleBtn.textContent = 'Login';
+          toggleText.textContent = 'Already have an account?';
+          pageTitle.textContent = 'Create Account';
+          clearMessages();
+        }
+      }
+      
+      toggleBtn.addEventListener('click', toggleMode);
+      
+      // Handle Login
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearMessages();
+        
+        const username = document.getElementById('loginUsername').value.trim();
+        if (!username) {
+          showError('Please enter a username');
+          return;
+        }
+        
+        try {
+          const response = await fetch('/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `username=${encodeURIComponent(username)}`
+          });
+          
+          if (response.ok) {
+            window.location.href = '/';
+          } else {
+            const data = await response.json();
+            showError(data.error || 'Login failed');
+          }
+        } catch (err) {
+          showError('Network error. Please try again.');
+        }
+      });
+      
+      // Handle Register
+      registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearMessages();
+        
+        const username = document.getElementById('registerUsername').value.trim();
+        if (!username) {
+          showError('Please enter a username');
+          return;
+        }
+        
+        try {
+          const response = await fetch('/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `username=${encodeURIComponent(username)}`
+          });
+          
+          if (response.ok) {
+            showSuccess('Registration successful! You can now login.');
+            setTimeout(() => {
+              toggleMode(); // Switch back to login
+            }, 2000);
+          } else {
+            const data = await response.json();
+            showError(data.error || 'Registration failed');
+          }
+        } catch (err) {
+          showError('Network error. Please try again.');
+        }
+      });
+    </script>
+  </body>
+</html>

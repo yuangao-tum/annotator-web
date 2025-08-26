@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Scenario Annotator</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; margin: 0; }
+      header { padding: 8px 12px; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; gap: 12px; }
+      .header-left { display: flex; align-items: center; gap: 12px; }
+      .back-btn { color: #667eea; text-decoration: none; font-weight: 500; }
+      .back-btn:hover { text-decoration: underline; }
+      .user-info { margin-left: auto; color: #666; font-size: 14px; }
+      main { display: grid; grid-template-columns: 1fr 380px; height: calc(100vh - 50px); }
+      .viewer { overflow: auto; display: flex; flex-direction: column; background: #fafafa; }
+      .viewer-inner { max-width: 100%; max-height: 70vh; padding: 12px; display: flex; align-items: center; justify-content: center; }
+      .panel { border-left: 1px solid #e5e5e5; padding: 12px; overflow: auto; }
+      .row { margin-bottom: 10px; }
+      label { display: block; font-size: 12px; color: #555; margin-bottom: 4px; }
+      select, input, textarea { width: 100%; box-sizing: border-box; padding: 8px; }
+      button { padding: 8px 12px; cursor: pointer; }
+      .thumbs { display: flex; gap: 8px; overflow-x: auto; padding: 16px; background: white; border-top: 1px solid #e5e5e5; }
+      .thumbs img { width: 120px; height: 80px; object-fit: cover; border: 2px solid #ddd; border-radius: 4px; cursor: pointer; transition: border-color 0.2s; }
+      .thumbs img:hover { border-color: #667eea; }
+      .thumbs img.active { border-color: #667eea; border-width: 3px; }
+      .split { display: flex; gap: 8px; align-items: center; }
+      .hidden { display:none; }
+      .annotation-field {
+        margin-bottom: 15px;
+      }
+      
+      .form-group {
+        margin-bottom: 15px;
+      }
+      
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+      }
+      
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      
+      .form-group select {
+        background-color: white;
+        cursor: pointer;
+      }
+      
+      .form-group select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+      }
+      
+      .form-group input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+      }
+      
+      /* Plots section styling */
+      #plots {
+        margin-top: 0;
+        padding: 16px;
+        background: white;
+        border-top: 1px solid #e5e5e5;
+        min-height: 120px;
+      }
+      
+      .plots-header {
+        margin-bottom: 12px;
+        font-weight: 600;
+        color: #333;
+        font-size: 14px;
+      }
+      
+      /* Saved annotations styling */
+      .annotation-item {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+      .annotation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .annotation-class {
+        font-weight: 600;
+        color: #495057;
+      }
+      .annotation-time {
+        font-size: 12px;
+        color: #6c757d;
+      }
+      .annotation-details {
+        font-size: 14px;
+        color: #495057;
+        margin-bottom: 8px;
+      }
+      .annotation-user {
+        font-size: 12px;
+        color: #6c757d;
+        font-style: italic;
+      }
+      .status-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+      }
+      .status-finished {
+        background: #28a745;
+      }
+      .status-unannotated {
+        background: #dc3545;
+      }
+      .class-status {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 12px;
+      }
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #6c757d;
+        font-style: italic;
+      }
+      .toast { position: fixed; top: 12px; right: 12px; background: #333; color: #fff; padding: 10px 14px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transition: opacity 0.2s ease; z-index: 9999; }
+      .toast.show { opacity: 0.95; }
+      .toast.success { background: #2e7d32; }
+      .toast.error { background: #c62828; }
+        .btn-impossible {
+          background-color: #dc3545;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          margin-left: 8px;
+        }
+        
+        .btn-impossible:hover {
+          background-color: #c82333;
+        }
+        
+        .btn-impossible:disabled {
+          background-color: #6c757d;
+          cursor: not-allowed;
+        }
+        .status-impossible {
+          background-color: #ff9800;
+          border: 2px solid #f57c00;
+        }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-left">
+        <a href="/" class="back-btn">← Back to Gallery</a>
+        <h1>Annotating: {{ scenario_name }}</h1>
+        <div class="split">
+          <label for="mode">Mode</label>
+          <select id="mode">
+            <option value="gif">GIF</option>
+            <option value="plots">Plots</option>
+          </select>
+        </div>
+      </div>
+      <div class="user-info">User: {{ username }}</div>
+    </header>
+    <main>
+      <div class="viewer">
+        <div class="viewer-inner" id="viewer">
+          <!-- media injected here -->
+        </div>
+        <!-- Plots section moved here, under the main viewer -->
+        <div id="plots" class="thumbs hidden">
+          <div class="plots-header">Available Plots</div>
+        </div>
+      </div>
+      <aside class="panel">
+        <h3>Annotation</h3>
+        <form id="annoForm">
+          <div class="row">
+            <label>Class</label>
+            <select name="class" id="annotationClass" required>
+              <option value="target lanelet change">target lanelet change</option>
+              <option value="behavior change">behavior change</option>
+              <option value="insert actor">insert actor</option>
+              <option value="delete agent">delete agent</option>
+            </select>
+          </div>
+          <div class="row"><label>Scenario</label><input name="scenario_name" id="scenarioName" readonly /></div>
+          
+          <!-- Dynamic fields for target lanelet change -->
+          <div class="annotation-field" data-class="target lanelet change">
+            <div class="row"><label>Vehicle ID</label><input name="veh_id_lanelet" placeholder="e.g., 3228" required /></div>
+            <div class="row"><label>Target Lanelet</label><input name="target_lanelet" placeholder="e.g., 7181" required /></div>
+            <div class="row"><label>Difficulty</label><select name="difficulty" required>
+              <option value="">Select difficulty...</option>
+              <option value="easy">Easy - Close or directly connected to original lanelet</option>
+              <option value="medium">Medium - Lane changing in same direction</option>
+              <option value="hard">Hard - Far away, completely new target</option>
+            </select></div>
+          </div>
+          
+          <!-- Behavior Change Fields -->
+          <div class="annotation-field" id="behavior-fields" style="display: none;">
+            <div class="form-group">
+              <label for="veh_id_behavior">Vehicle ID:</label>
+              <input type="text" id="veh_id_behavior" name="veh_id_behavior" placeholder="e.g., 3244">
+            </div>
+            <div class="form-group">
+              <label for="target_behavior">Target Behavior:</label>
+              <select id="target_behavior" name="target_behavior" required>
+                <option value="">Select behavior...</option>
+                <option value="aggressive_lane_changer">Aggressive Lane-Changer - Goal: Gain advantage through frequent overtakes, pushing into gaps</option>
+                <option value="speeder">Speeder - Goal: Drive faster than the speed limit while otherwise behaving normally</option>
+                <option value="balanced_driver">Balanced Driver - Goal: Represent an average driver with realistic, mid-range behavior</option>
+                <option value="cautious_driver">Cautious Driver - Goal: Maximize safety, keeping large gaps and driving carefully</option>
+                <option value="eco_driver">Eco Driver - Goal: Save fuel/energy by driving smoothly, gently, and slightly under the limit</option>
+                <option value="emergency_driver">Emergency Driver - Goal: Reach destination urgently, prioritizing speed and assertive maneuvers</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Dynamic fields for insert actor -->
+          <div class="annotation-field hidden" data-class="insert actor">
+            <div class="row"><label>Vehicle ID</label><input name="veh_id_insert" placeholder="e.g., 11" /></div>
+            <div class="row"><label>Begin Lanelet</label><input name="begin_lanelet" placeholder="e.g., 7181" /></div>
+            <div class="row"><label>Target Lanelet</label><input name="target_lanelet_insert" placeholder="e.g., 6122" /></div>
+          </div>
+          
+          <!-- Delete Agent Fields -->
+          <div class="annotation-field" id="delete-agent-fields" style="display: none;">
+            <div class="form-group">
+              <label for="veh_id_delete">Vehicle ID to Delete:</label>
+              <input type="text" id="veh_id_delete" name="veh_id_delete" placeholder="e.g., 3244">
+            </div>
+            <div class="form-group">
+              <label for="delete_reason">Reason for Deletion:</label>
+              <select id="delete_reason" name="delete_reason" required>
+                <option value="">Select reason...</option>
+                <option value="rear_collision_ego_no_fault">1. Rear collision with ego - no fault from ego</option>
+                <option value="other">2. Other - specify in notes</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="row"><label>Notes</label><textarea name="notes" rows="3" placeholder="optional notes"></textarea></div>
+          <div class="row split">
+            <button type="submit" id="saveBtn">Save annotation</button>
+            <button type="button" id="impossibleBtn" class="btn-impossible">Impossible to Annotate</button>
+            <span id="saveMsg"></span>
+          </div>
+        </form>
+        <hr />
+        <h3>Saved Annotations</h3>
+        <div id="savedAnnotations">
+          <div class="loading">Loading annotations...</div>
+        </div>
+      </aside>
+    </main>
+    <div id="toast" class="toast"></div>
+
+    <script>
+      const scenarioSelect = document.getElementById('scenarioSelect');
+      const scenarioName = document.getElementById('scenarioName');
+      const viewer = document.getElementById('viewer');
+      const form = document.getElementById('annoForm');
+      const saveMsg = document.getElementById('saveMsg');
+      const plots = document.getElementById('plots');
+      const mode = document.getElementById('mode');
+      const annotationClassSelect = document.getElementById('annotationClass');
+      const toast = document.getElementById('toast');
+      const saveBtn = document.getElementById('saveBtn');
+      const impossibleBtn = document.getElementById('impossibleBtn');
+      const savedAnnotations = document.getElementById('savedAnnotations');
+      
+      // Get scenario name from template
+      const currentScenario = '{{ scenario_name }}';
+
+      function showToast(message, type = 'success') {
+        toast.textContent = message;
+        toast.className = `toast show ${type}`;
+        setTimeout(() => {
+          toast.className = 'toast';
+        }, 2000);
+      }
+
+      async function loadSavedAnnotations() {
+        try {
+          const res = await fetch(`/api/annotations/${encodeURIComponent(currentScenario)}`);
+          if (res.ok) {
+            const data = await res.json();
+            // Handle new API format: {annotations: [...]}
+            const annotations = data.annotations || data;
+            displaySavedAnnotations(annotations);
+          } else {
+            savedAnnotations.innerHTML = '<div class="loading">No annotations found</div>';
+          }
+        } catch (err) {
+          console.error('Error in loadSavedAnnotations:', err);
+          savedAnnotations.innerHTML = '<div class="loading">Error loading annotations</div>';
+        }
+      }
+
+      function displaySavedAnnotations(annotations) {
+        if (!annotations || annotations.length === 0) {
+          savedAnnotations.innerHTML = '<div class="loading">No annotations found</div>';
+          return;
+        }
+
+        // Group annotations by class
+        const byClass = {};
+        annotations.forEach(ann => {
+          const cls = ann.class;
+          if (!byClass[cls]) byClass[cls] = [];
+          byClass[cls].push(ann);
+        });
+
+        // Get all possible classes
+        const allClasses = ['target lanelet change', 'behavior change', 'insert actor', 'delete agent', 'impossible'];
+        
+        let html = '';
+        
+        // Show status for each class
+        allClasses.forEach(cls => {
+          const classAnnotations = byClass[cls] || [];
+          const isFinished = classAnnotations.length > 0;
+          let statusClass, statusText;
+          
+          if (cls === 'impossible') {
+            statusClass = isFinished ? 'status-impossible' : 'status-unannotated';
+            statusText = isFinished ? 'Impossible' : 'Unannotated';
+          } else {
+            statusClass = isFinished ? 'status-finished' : 'status-unannotated';
+            statusText = isFinished ? 'Finished' : 'Unannotated';
+          }
+          
+          html += `
+            <div class="class-status">
+              <span class="status-indicator ${statusClass}"></span>
+              <strong>${cls}:</strong> ${statusText}
+              ${isFinished ? ` (${classAnnotations.length})` : ''}
+            </div>
+          `;
+        });
+
+        html += '<hr style="margin: 15px 0;">';
+        
+        // Show recent annotations
+        const recentAnnotations = annotations.slice(-5).reverse(); // Show last 5
+        recentAnnotations.forEach(ann => {
+          const time = new Date(ann.timestamp).toLocaleString();
+          const details = [];
+          
+          if (ann.veh_id) details.push(`Vehicle: ${ann.veh_id}`);
+          if (ann.target_lanelet) details.push(`Target: ${ann.target_lanelet}`);
+          if (ann.begin_lanelet) details.push(`Begin: ${ann.begin_lanelet}`);
+          if (ann.target_behavior) details.push(`Behavior: ${ann.target_behavior}`);
+          if (ann.delete_reason) details.push(`Reason: ${ann.delete_reason}`);
+          if (ann.notes) details.push(`Notes: ${ann.notes}`);
+          
+          html += `
+            <div class="annotation-item">
+              <div class="annotation-header">
+                <span class="annotation-class">${ann.class}</span>
+                <span class="annotation-time">${time}</span>
+              </div>
+              <div class="annotation-details">${details.join(' • ')}</div>
+              <div class="annotation-user">by ${ann.username || 'Unknown'}</div>
+            </div>
+          `;
+        });
+
+        savedAnnotations.innerHTML = html;
+      }
+
+      async function loadScenarios() {
+        // No need to load scenarios list since we're annotating a specific one
+        scenarioName.value = currentScenario;
+        onScenarioChange();
+      }
+
+      function showGIF(name) {
+        viewer.innerHTML = '';
+        const img = document.createElement('img');
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '85vh';
+        img.src = `/media/${encodeURIComponent(name)}/${encodeURIComponent(name)}.gif`;
+        viewer.appendChild(img);
+      }
+
+      async function showPlots(name) {
+        viewer.innerHTML = '';
+        plots.classList.remove('hidden');
+        plots.innerHTML = '<div class="plots-header">Available Plots</div>';
+        const res = await fetch(`/api/plots/${encodeURIComponent(name)}`);
+        const files = await res.json();
+        if (!files.length) {
+          plots.innerHTML = '<div class="loading">No plots found</div>';
+          return;
+        }
+        
+        // Helper function to extract timestep from filename
+        function extractTimestep(filename) {
+          const match = filename.match(/_(\d+)\.png$/);
+          return match ? parseInt(match[1]) : '?';
+        }
+        
+        // Show first plot in main viewer
+        if (files.length > 0) {
+          const firstFile = files[0];
+          const timestep = extractTimestep(firstFile);
+          
+          const container = document.createElement('div');
+          container.style.textAlign = 'center';
+          
+          const timestepLabel = document.createElement('div');
+          timestepLabel.textContent = `Timestep: ${timestep}`;
+          timestepLabel.style.fontSize = '18px';
+          timestepLabel.style.fontWeight = 'bold';
+          timestepLabel.style.marginBottom = '10px';
+          timestepLabel.style.color = '#333';
+          
+          const mainImg = document.createElement('img');
+          mainImg.style.maxWidth = '100%';
+          mainImg.style.maxHeight = '60vh';
+          mainImg.src = `/media/${encodeURIComponent(name)}/plots/${encodeURIComponent(firstFile)}`;
+          
+          container.appendChild(timestepLabel);
+          container.appendChild(mainImg);
+          viewer.appendChild(container);
+        }
+        
+        // Show all plots as horizontal thumbnails below the main viewer
+        files.forEach((file, index) => {
+          const timestep = extractTimestep(file);
+          
+          const container = document.createElement('div');
+          container.style.textAlign = 'center';
+          container.style.minWidth = '120px';
+          
+          const timestepLabel = document.createElement('div');
+          timestepLabel.textContent = `T: ${timestep}`;
+          timestepLabel.style.fontSize = '11px';
+          timestepLabel.style.fontWeight = 'bold';
+          timestepLabel.style.marginBottom = '4px';
+          timestepLabel.style.color = '#666';
+          
+          const img = document.createElement('img');
+          img.src = `/media/${encodeURIComponent(name)}/plots/${encodeURIComponent(file)}`;
+          img.style.cursor = 'pointer';
+          img.style.border = index === 0 ? '3px solid #667eea' : '2px solid #ddd';
+          img.onclick = function() {
+            // Update main viewer when thumbnail is clicked
+            viewer.innerHTML = '';
+            const newContainer = document.createElement('div');
+            newContainer.style.textAlign = 'center';
+            
+            const newTimestepLabel = document.createElement('div');
+            newTimestepLabel.textContent = `Timestep: ${timestep}`;
+            newTimestepLabel.style.fontSize = '18px';
+            newTimestepLabel.style.fontWeight = 'bold';
+            newTimestepLabel.style.marginBottom = '10px';
+            newTimestepLabel.style.color = '#333';
+            
+            const newImg = document.createElement('img');
+            newImg.style.maxWidth = '100%';
+            newImg.style.maxHeight = '60vh';
+            newImg.src = this.src;
+            
+            newContainer.appendChild(newTimestepLabel);
+            newContainer.appendChild(newImg);
+            viewer.appendChild(newContainer);
+            
+            // Update active state of thumbnails
+            plots.querySelectorAll('img').forEach(thumb => {
+              thumb.style.border = '2px solid #ddd';
+            });
+            this.style.border = '3px solid #667eea';
+          };
+          
+          container.appendChild(timestepLabel);
+          container.appendChild(img);
+          plots.appendChild(container);
+        });
+      }
+
+      async function onScenarioChange() {
+        const name = scenarioName.value; // Use scenarioName from template
+        plots.classList.add('hidden');
+        if (mode.value === 'gif') {
+          showGIF(name);
+        } else {
+          await showPlots(name);
+        }
+      }
+
+      // scenarioSelect.addEventListener('change', onScenarioChange); // Removed as scenarioSelect is removed
+      mode.addEventListener('change', onScenarioChange);
+
+      // Handle dynamic form field changes
+      function updateAnnotationFields() {
+        const selectedClass = annotationClassSelect.value;
+        const targetLaneletChangeFields = document.querySelector('.annotation-field[data-class="target lanelet change"]');
+        const behaviorChangeFields = document.getElementById('behavior-fields'); // Get the new behavior fields div
+        const insertActorFields = document.querySelector('.annotation-field[data-class="insert actor"]');
+        const deleteAgentFields = document.getElementById('delete-agent-fields'); // Get the new delete agent fields div
+        
+        console.log('Updating fields for class:', selectedClass);
+        
+        // Hide all fields first
+        if (targetLaneletChangeFields) targetLaneletChangeFields.style.display = 'none';
+        if (behaviorChangeFields) behaviorChangeFields.style.display = 'none';
+        if (insertActorFields) insertActorFields.style.display = 'none';
+        if (deleteAgentFields) deleteAgentFields.style.display = 'none'; // Hide delete agent fields
+        
+        // Show fields for selected class
+        if (selectedClass === 'target lanelet change') {
+          if (targetLaneletChangeFields) targetLaneletChangeFields.style.display = 'block';
+        } else if (selectedClass === 'behavior change') {
+          if (behaviorChangeFields) behaviorChangeFields.style.display = 'block';
+        } else if (selectedClass === 'insert actor') {
+          if (insertActorFields) insertActorFields.style.display = 'block';
+        } else if (selectedClass === 'delete agent') { // Add logic for delete agent
+          if (deleteAgentFields) deleteAgentFields.style.display = 'block';
+        }
+        
+        // Update required attributes for visible fields
+        const allInputs = form.querySelectorAll('input, select');
+        allInputs.forEach(input => {
+          input.removeAttribute('required');
+        });
+        
+        // Add required to visible fields
+        let visibleFields;
+        if (selectedClass === 'target lanelet change') {
+          visibleFields = targetLaneletChangeFields;
+        } else if (selectedClass === 'behavior change') {
+          visibleFields = behaviorChangeFields;
+        } else if (selectedClass === 'insert actor') {
+          visibleFields = insertActorFields;
+        } else if (selectedClass === 'delete agent') { // Add logic for delete agent
+          visibleFields = deleteAgentFields;
+        }
+        
+        if (visibleFields) {
+          const visibleInputs = visibleFields.querySelectorAll('input, select');
+          visibleInputs.forEach(input => {
+            if (input.name && input.name !== 'notes') {
+              input.setAttribute('required', 'required');
+            }
+          });
+        }
+      }
+
+      annotationClassSelect.addEventListener('change', updateAnnotationFields);
+
+      loadScenarios();
+      // Initialize fields for default selection
+      updateAnnotationFields();
+      loadSavedAnnotations(); // Load saved annotations on page load
+      
+      // Test if form is working
+      console.log('Form element:', form);
+      console.log('Submit button:', saveBtn);
+      console.log('Form event listeners attached');
+      
+      // Simple test - add a click handler to the button
+      if (saveBtn) {
+        saveBtn.onclick = function(e) {
+          e.preventDefault();
+          console.log('Button clicked via onclick');
+          submitAnnotation();
+        };
+        console.log('Added onclick handler to button');
+      } else {
+        console.log('ERROR: Submit button not found!');
+      }
+      
+      // Add click handler for impossible button
+      if (impossibleBtn) {
+        impossibleBtn.onclick = function(e) {
+          e.preventDefault();
+          console.log('Impossible button clicked');
+          markAsImpossible();
+        };
+        console.log('Added onclick handler to impossible button');
+      } else {
+        console.log('ERROR: Impossible button not found!');
+      }
+      
+      // Main function to submit annotation
+      async function submitAnnotation() {
+        console.log('submitAnnotation called');
+        
+        const formData = new FormData(form);
+        const payload = {};
+        const selectedClass = annotationClassSelect.value;
+        
+        console.log('Selected class:', selectedClass);
+        console.log('Form data entries:');
+        for (const [key, value] of formData.entries()) {
+          console.log(`  ${key}: ${value}`);
+        }
+        
+        // Map field names based on selected class
+        if (selectedClass === 'target lanelet change') {
+          payload['veh_id'] = formData.get('veh_id_lanelet');
+          payload['target_lanelet'] = formData.get('target_lanelet');
+          payload['difficulty'] = formData.get('difficulty');
+        } else if (selectedClass === 'behavior change') {
+          payload['veh_id'] = formData.get('veh_id_behavior');
+          payload['target_behavior'] = formData.get('target_behavior');
+        } else if (selectedClass === 'insert actor') {
+          payload['veh_id'] = formData.get('veh_id_insert');
+          payload['begin_lanelet'] = formData.get('begin_lanelet');
+          payload['target_lanelet'] = formData.get('target_lanelet_insert');
+        } else if (selectedClass === 'delete agent') { // Add logic for delete agent
+          payload['veh_id'] = formData.get('veh_id_delete');
+          payload['delete_reason'] = formData.get('delete_reason');
+        }
+        
+        // Add common fields
+        payload['class'] = selectedClass;
+        payload['scenario_name'] = currentScenario;
+        
+        // Add notes if provided
+        const notes = formData.get('notes');
+        if (notes && notes.trim()) {
+          payload['notes'] = notes.trim();
+        }
+        
+        console.log('Final payload:', payload);
+        console.log('Current scenario:', currentScenario);
+        
+        // Check if annotation for this class already exists
+        const existingAnnotations = await loadExistingAnnotations();
+        console.log('Existing annotations loaded:', existingAnnotations);
+        const existingForClass = existingAnnotations.find(ann => ann.class === selectedClass);
+        console.log('Existing annotation for class:', selectedClass, ':', existingForClass);
+        
+        if (existingForClass) {
+          const confirmMessage = `An annotation for "${selectedClass}" already exists:\n\n` +
+            `Vehicle ID: ${existingForClass.veh_id}\n` +
+            `Saved by: ${existingForClass.username}\n` +
+            `Time: ${new Date(existingForClass.timestamp).toLocaleString()}\n\n` +
+            `Do you want to overwrite it with your new annotation?`;
+          
+          if (!confirm(confirmMessage)) {
+            console.log('User cancelled overwrite');
+            return;
+          }
+          console.log('User confirmed overwrite');
+        } else {
+          console.log('No existing annotation found for class:', selectedClass);
+        }
+        
+        saveMsg.textContent = 'Saving...';
+        saveBtn.disabled = true;
+        
+        try {
+          const res = await fetch('/api/annotate', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(payload) 
+          });
+          const data = await res.json();
+          console.log('Response:', res.status, data);
+          
+          if (res.ok) {
+            saveMsg.textContent = 'Saved to ' + data.path;
+            showToast('Annotation saved', 'success');
+            form.reset();
+            scenarioName.value = currentScenario;
+            annotationClassSelect.dispatchEvent(new Event('change'));
+            loadSavedAnnotations(); // Refresh saved annotations display
+          } else {
+            const msg = 'Error: ' + (data.error || res.status);
+            saveMsg.textContent = msg;
+            showToast(msg, 'error');
+          }
+        } catch (err) {
+          console.error('Error submitting:', err);
+          const msg = 'Network error saving annotation';
+          saveMsg.textContent = msg;
+          showToast(msg, 'error');
+        } finally {
+          saveBtn.disabled = false;
+        }
+      }
+      
+      // Function to load existing annotations for overwrite check
+      async function loadExistingAnnotations() {
+        try {
+          const res = await fetch(`/api/annotations/${currentScenario}`);
+          if (res.ok) {
+            const data = await res.json();
+            return data.annotations || [];
+          }
+        } catch (err) {
+          console.error('Error loading existing annotations:', err);
+        }
+        return [];
+      }
+
+      // Function to mark scenario as impossible to annotate
+      async function markAsImpossible() {
+        console.log('markAsImpossible called for scenario:', currentScenario);
+        
+        const payload = {
+          'class': 'impossible',
+          'scenario_name': currentScenario,
+          'veh_id': 'none',
+          'target_lanelet': 'none',
+          'target_behavior': 'none',
+          'begin_lanelet': 'none',
+          'notes': 'Scenario marked as impossible to annotate'
+        };
+        
+        console.log('Impossible payload:', payload);
+        
+        saveMsg.textContent = 'Marking as impossible...';
+        saveBtn.disabled = true;
+        impossibleBtn.disabled = true;
+        
+        try {
+          const res = await fetch('/api/annotate', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(payload) 
+          });
+          const data = await res.json();
+          console.log('Impossible response:', res.status, data);
+          
+          if (res.ok) {
+            saveMsg.textContent = 'Marked as impossible to annotate';
+            showToast('Scenario marked as impossible', 'success');
+            loadSavedAnnotations(); // Refresh saved annotations display
+          } else {
+            const msg = 'Error: ' + (data.error || res.status);
+            saveMsg.textContent = msg;
+            showToast(msg, 'error');
+          }
+        } catch (err) {
+          console.error('Error marking as impossible:', err);
+          const msg = 'Network error marking scenario as impossible';
+          saveMsg.textContent = msg;
+          showToast(msg, 'error');
+        } finally {
+          saveBtn.disabled = false;
+          impossibleBtn.disabled = false;
+        }
+      }
+    </script>
+  </body>
+</html>

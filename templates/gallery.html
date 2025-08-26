@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Scenario Gallery - Annotator</title>
+    <style>
+      body { 
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; 
+        margin: 0; 
+        background: #f5f5f5;
+      }
+      header {
+        background: white;
+        padding: 16px 24px;
+        border-bottom: 1px solid #e5e5e5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .user-info {
+        color: #666;
+        font-size: 14px;
+      }
+      .logout-btn {
+        padding: 8px 16px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 14px;
+      }
+      .logout-btn:hover {
+        background: #c82333;
+      }
+      main {
+        padding: 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 24px;
+        margin-top: 24px;
+      }
+      .scenario-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+      }
+      .scenario-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      }
+      .scenario-cover {
+        width: 100%;
+        height: 200px;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .scenario-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .scenario-cover .no-plot {
+        color: #999;
+        font-size: 14px;
+      }
+      .scenario-info {
+        padding: 16px;
+      }
+      .scenario-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        word-break: break-word;
+      }
+      .scenario-meta {
+        display: flex;
+        gap: 12px;
+        font-size: 12px;
+        color: #666;
+      }
+      .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .meta-item.has {
+        color: #28a745;
+      }
+      .meta-item.missing {
+        color: #dc3545;
+      }
+      .annotation-status {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #f0f0f0;
+      }
+      .status-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+      .badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .badge.total {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+      .badge.class {
+        background: #f3e5f5;
+        color: #7b1fa2;
+      }
+      .badge.none {
+        background: #ffebee;
+        color: #c62828;
+      }
+      .last-updated {
+        font-size: 11px;
+        color: #999;
+        font-style: italic;
+      }
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        font-size: 16px;
+      }
+      
+      .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #007bff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      .loading-detail {
+        font-size: 14px;
+        color: #999;
+        margin-top: 8px;
+      }
+      
+      .loading-progress {
+        background: #e9ecef;
+        border-radius: 10px;
+        height: 8px;
+        margin: 10px 0;
+        overflow: hidden;
+      }
+      
+      .loading-progress-bar {
+        background: linear-gradient(90deg, #007bff, #28a745);
+        height: 100%;
+        width: 0%;
+        transition: width 0.3s ease;
+        border-radius: 10px;
+      }
+      
+      .loading-stats {
+        display: flex;
+        gap: 20px;
+        margin-top: 15px;
+        font-size: 12px;
+        color: #666;
+      }
+      
+      .loading-stat {
+        text-align: center;
+      }
+      
+      .loading-stat-number {
+        font-size: 18px;
+        font-weight: bold;
+        color: #007bff;
+      }
+      .search-bar {
+        margin-bottom: 24px;
+      }
+      .search-input {
+        width: 100%;
+        max-width: 400px;
+        padding: 12px 16px;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 16px;
+        box-sizing: border-box;
+      }
+      .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+      .progress-section {
+        margin-bottom: 24px;
+        padding: 16px;
+        background: #f0f0f0;
+        border-radius: 8px;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+      }
+      .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .progress-header h2 {
+        margin: 0;
+        font-size: 18px;
+        color: #333;
+      }
+      .progress-stats {
+        font-size: 14px;
+        color: #666;
+      }
+      .progress-bar-container {
+        height: 10px;
+        background-color: #e0e0e0;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      .progress-bar {
+        height: 100%;
+        background: linear-gradient(to right, #4caf50, #8bc34a); /* Green to Light Green */
+        border-radius: 5px;
+        transition: width 0.3s ease-in-out;
+      }
+      .progress-fill {
+        height: 100%;
+        background: #4caf50; /* Darker Green for fill */
+        border-radius: 5px;
+        transition: width 0.3s ease-in-out;
+      }
+      .instructions-section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border: 1px solid #e9ecef;
+      }
+      .instructions-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #e0e0e0;
+        transition: background-color 0.2s ease;
+      }
+      .instructions-header:hover {
+        background-color: #e9ecef;
+        border-radius: 8px;
+        padding: 16px;
+        margin: -16px -16px 0 -16px;
+      }
+      .instructions-header h2 {
+        margin: 0;
+        font-size: 20px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .toggle-icon {
+        font-size: 20px;
+        color: #666;
+        transition: transform 0.3s ease;
+        font-weight: bold;
+      }
+      .instructions-content {
+        display: none; /* Hidden by default */
+        margin-top: 16px;
+        animation: slideDown 0.3s ease-out;
+      }
+      .instructions-content.active {
+        display: block; /* Show when active */
+      }
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .instruction-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+      .instruction-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .instruction-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      }
+      .instruction-card h3 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: #333;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .instruction-card p {
+        margin-bottom: 12px;
+        color: #555;
+        line-height: 1.6;
+        font-size: 14px;
+      }
+      .instruction-card ul {
+        padding-left: 20px;
+      }
+      
+      .user-stats-section {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      
+      .user-stats-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      
+      .user-stats-header h2 {
+        margin: 0;
+        color: #333;
+      }
+      
+      .refresh-btn {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      
+      .refresh-btn:hover {
+        background: #0056b3;
+      }
+      
+      .user-stats-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+      }
+      
+      .user-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        text-align: center;
+      }
+      
+      .user-card h3 {
+        margin: 0 0 10px 0;
+        color: #495057;
+        font-size: 16px;
+      }
+      
+      .user-stat {
+        margin: 8px 0;
+        font-size: 14px;
+        color: #6c757d;
+      }
+      
+      .user-stat strong {
+        color: #495057;
+      }
+      
+      .login-count {
+        font-size: 24px;
+        font-weight: bold;
+        color: #007bff;
+        margin: 10px 0;
+      }
+      .instruction-card {
+        margin-bottom: 12px;
+      }
+      .instruction-card li {
+        margin-bottom: 6px;
+        color: #555;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .instruction-card strong {
+        color: #333;
+        font-weight: 600;
+      }
+      .instruction-tips {
+        margin-top: 24px;
+        padding: 20px;
+        border-top: 1px solid #e0e0e0;
+        background: #e8f4fd;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+      }
+      .instruction-tips h3 {
+        margin-top: 0;
+        margin-bottom: 16px;
+        color: #333;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .instruction-tips ul {
+        padding-left: 20px;
+        margin-bottom: 0;
+      }
+      .instruction-tips li {
+        margin-bottom: 10px;
+        color: #555;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .instruction-tips strong {
+        color: #333;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-left">
+        <h1>🚗 Scenario Gallery</h1>
+        <div class="user-info">Welcome, {{ username }}!</div>
+      </div>
+      <a href="/logout" class="logout-btn">Logout</a>
+    </header>
+    
+    <main>
+      <div class="instructions-section">
+        <div class="instructions-header" onclick="toggleInstructions()">
+          <h2>📚 How to Annotate</h2>
+          <span class="toggle-icon" id="toggleIcon">▼</span>
+        </div>
+        <div class="instructions-content" id="instructionsContent">
+          <div class="instruction-grid">
+            <div class="instruction-card">
+              <h3>🎯 Step 1: Select a Scenario</h3>
+              <p>Click on any scenario card from the gallery below. Each card shows the scenario name and available media (GIF/plots).</p>
+            </div>
+            
+            <div class="instruction-card">
+              <h3>✏️ Step 2: Choose Annotation Class</h3>
+              <p>Select one of four annotation types:</p>
+              <ul>
+                <li><strong>Target Lanelet Change:</strong> Move existing vehicle to different lane with difficulty rating (Easy/Medium/Hard)</li>
+                <li><strong>Behavior Change:</strong> Change driving behavior (aggressive, cautious, eco, etc.)</li>
+                <li><strong>Insert Actor:</strong> Add new vehicle with start/end lanelets</li>
+                <li><strong>Delete Agent:</strong> Remove vehicle with reason (collision, other)</li>
+              </ul>
+              <p><strong>Requirement:</strong> Complete <strong>all four</strong> classes for each scenario. You can submit them in <strong>any order</strong>.</p>
+            </div>
+            
+            <div class="instruction-card">
+              <h3>🚫 Step 3: Handle Difficult Scenarios</h3>
+              <p>If a scenario is too difficult or impossible to annotate:</p>
+              <ul>
+                <li>Click <strong>"Impossible to Annotate"</strong> button</li>
+                <li>This marks the scenario as complete</li>
+                <li>Shows orange status in progress tracking</li>
+              </ul>
+            </div>
+            
+            <div class="instruction-card">
+              <h3>💾 Step 4: Save & Track Progress</h3>
+              <p>After filling the form:</p>
+              <ul>
+                <li>Click <strong>"Save Annotation"</strong></li>
+                <li>See real-time progress updates</li>
+                <li>Track completion status for each class</li>
+                <li>Monitor overall progress in the bar above</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="instruction-tips">
+            <h3>💡 Pro Tips:</h3>
+            <ul>
+              <li><strong>Required Classes:</strong> Each scenario is only fully complete after all four classes are submitted.</li>
+              <li><strong>Overwrite Protection:</strong> System warns if you're replacing existing annotations</li>
+              <li><strong>Re-annotate:</strong> If you submit a class again for the same scenario, the new submission <strong>overwrites</strong> the previous one.</li>
+              <li><strong>User Isolation:</strong> Each user has separate annotation folders</li>
+              <li><strong>Progress Tracking:</strong> Green bar shows completion percentage</li>
+              <li><strong>Search Function:</strong> Use the search bar to find specific scenarios quickly</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <div class="progress-section">
+        <div class="progress-header">
+          <h2>📊 Overall Progress</h2>
+          <div class="progress-stats">
+            <span id="progressText">Loading progress...</span>
+          </div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+          </div>
+        </div>
+        <div id="progressLoading" class="loading-detail" style="text-align: center; margin-top: 10px;">
+          <div class="loading-spinner"></div>
+          Calculating annotation progress...
+        </div>
+      </div>
+      
+      <div class="user-stats-section">
+        <div class="user-stats-header">
+          <h2>👥 User Statistics</h2>
+          <button id="refreshUserStats" class="refresh-btn">🔄 Refresh</button>
+        </div>
+        <div id="userStats" class="user-stats-content">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            Loading user statistics...
+            <div class="loading-detail">Fetching user data and login counts</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="search-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search scenarios...">
+      </div>
+      
+      <div id="gallery" class="gallery-grid">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          Loading scenarios...
+          <div class="loading-detail">Fetching 255 scenarios and cover images</div>
+          <div class="loading-progress">
+            <div class="loading-progress-bar" id="scenarioProgressBar"></div>
+          </div>
+          <div class="loading-stats">
+            <div class="loading-stat">
+              <div class="loading-stat-number" id="scenariosLoaded">0</div>
+              <div>Scenarios Loaded</div>
+            </div>
+            <div class="loading-stat">
+              <div class="loading-stat-number" id="imagesLoaded">0</div>
+              <div>Images Loaded</div>
+            </div>
+            <div class="loading-stat">
+              <div class="loading-stat-number" id="estimatedTime">~1-2 min</div>
+              <div>Est. Time</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const gallery = document.getElementById('gallery');
+      const searchInput = document.getElementById('searchInput');
+      const progressText = document.getElementById('progressText');
+      const progressFill = document.getElementById('progressFill');
+      const instructionsHeader = document.querySelector('.instructions-header');
+      const toggleIcon = document.getElementById('toggleIcon');
+      const instructionsContent = document.getElementById('instructionsContent');
+      const refreshUserStats = document.getElementById('refreshUserStats');
+      let allScenarios = [];
+
+      function toggleInstructions() {
+        instructionsContent.classList.toggle('active');
+        toggleIcon.textContent = instructionsContent.classList.contains('active') ? '▲' : '▼';
+      }
+
+      async function loadScenarios() {
+        try {
+          const startTime = Date.now();
+          const progressBar = document.getElementById('scenarioProgressBar');
+          const scenariosLoaded = document.getElementById('scenariosLoaded');
+          const imagesLoaded = document.getElementById('imagesLoaded');
+          const estimatedTime = document.getElementById('estimatedTime');
+          
+          // Show initial loading state
+          progressBar.style.width = '0%';
+          scenariosLoaded.textContent = '0';
+          imagesLoaded.textContent = '0';
+          estimatedTime.textContent = '~1-2 min';
+          
+          const res = await fetch('/api/scenarios');
+          allScenarios = await res.json();
+          
+          // Update progress bar to 50% after API call
+          progressBar.style.width = '50%';
+          scenariosLoaded.textContent = allScenarios.length;
+          
+          // Render scenarios with progressive image loading
+          renderScenarios(allScenarios);
+          
+          // Start counting loaded images
+          let loadedImages = 0;
+          const totalImages = allScenarios.filter(s => s.first_plot).length;
+          
+          // Update progress as images load
+          const updateImageProgress = () => {
+            loadedImages++;
+            const progress = 50 + (loadedImages / totalImages) * 50;
+            progressBar.style.width = `${progress}%`;
+            imagesLoaded.textContent = loadedImages;
+            
+            // Update estimated time
+            const elapsed = Date.now() - startTime;
+            const rate = loadedImages / (elapsed / 1000);
+            const remaining = (totalImages - loadedImages) / rate;
+            if (remaining > 0 && rate > 0) {
+              estimatedTime.textContent = `${Math.ceil(remaining)}s`;
+            }
+            
+            if (loadedImages >= totalImages) {
+              progressBar.style.width = '100%';
+              estimatedTime.textContent = 'Complete!';
+            }
+          };
+          
+          // Monitor image loading
+          const images = document.querySelectorAll('.scenario-cover img');
+          images.forEach(img => {
+            if (img.complete) {
+              updateImageProgress();
+            } else {
+              img.addEventListener('load', updateImageProgress);
+              img.addEventListener('error', updateImageProgress);
+            }
+          });
+          
+        } catch (err) {
+          gallery.innerHTML = '<div class="loading">Error loading scenarios</div>';
+        }
+      }
+
+      async function loadProgress() {
+        try {
+          const progressLoading = document.getElementById('progressLoading');
+          const res = await fetch('/api/progress');
+          if (res.ok) {
+            const progress = await res.json();
+            updateProgressDisplay(progress);
+            // Hide loading indicator
+            progressLoading.style.display = 'none';
+          }
+        } catch (err) {
+          console.error('Error loading progress:', err);
+          progressText.textContent = 'Error loading progress';
+          progressLoading.style.display = 'none';
+        }
+      }
+      
+      async function loadUserStats() {
+        try {
+          const userStatsContainer = document.getElementById('userStats');
+          const res = await fetch('/api/users/stats');
+          if (res.ok) {
+            const data = await res.json();
+            updateUserStatsDisplay(data.users);
+          }
+        } catch (err) {
+          console.error('Error loading user stats:', err);
+          document.getElementById('userStats').innerHTML = '<div class="loading">Error loading user statistics</div>';
+        }
+      }
+      
+      function updateUserStatsDisplay(users) {
+        const userStatsContainer = document.getElementById('userStats');
+        
+        if (users.length === 0) {
+          userStatsContainer.innerHTML = '<div class="loading">No users found</div>';
+          return;
+        }
+        
+        userStatsContainer.innerHTML = users.map(user => `
+          <div class="user-card">
+            <h3>👤 ${user.username}</h3>
+            <div class="login-count">${user.login_count || 0}</div>
+            <div class="user-stat">Login Count</div>
+            <div class="user-stat">
+              <strong>Registered:</strong> ${new Date(user.registered_at).toLocaleDateString()}
+            </div>
+            ${user.last_login ? `
+              <div class="user-stat">
+                <strong>Last Login:</strong> ${new Date(user.last_login).toLocaleString()}
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+      }
+
+      function updateProgressDisplay(progress) {
+        const { total_scenarios, completed_scenarios, impossible_scenarios, progress_percentage } = progress;
+        
+        progressText.textContent = `${completed_scenarios} of ${total_scenarios} scenarios completed (${progress_percentage}%)`;
+        if (impossible_scenarios > 0) {
+          progressText.textContent += ` • ${impossible_scenarios} marked as impossible`;
+        }
+        
+        progressFill.style.width = `${progress_percentage}%`;
+      }
+
+      function renderScenarios(scenarios) {
+        if (scenarios.length === 0) {
+          gallery.innerHTML = '<div class="loading">No scenarios found</div>';
+          return;
+        }
+
+        gallery.innerHTML = scenarios.map(scenario => `
+          <div class="scenario-card" onclick="openScenario('${scenario.name}')">
+            <div class="scenario-cover">
+              ${scenario.first_plot 
+                ? `<img src="/media/${encodeURIComponent(scenario.name)}/plots/${encodeURIComponent(scenario.first_plot)}" alt="${scenario.name}">`
+                : '<div class="no-plot">No plot available</div>'
+              }
+            </div>
+            <div class="scenario-info">
+              <div class="scenario-name">${scenario.name}</div>
+              <div class="scenario-meta">
+                <div class="meta-item ${scenario.has_gif ? 'has' : 'missing'}">
+                  <span>🎬</span> GIF
+                </div>
+                <div class="meta-item ${scenario.has_plots ? 'has' : 'missing'}">
+                  <span>📊</span> Plots
+                </div>
+              </div>
+              <div class="annotation-status">
+                <div class="status-badges">
+                  ${scenario.status.total > 0 
+                    ? `<span class="badge total">Total: ${scenario.status.total}</span>`
+                    : '<span class="badge none">Not annotated</span>'
+                  }
+                  ${Object.keys(scenario.status.by_class).map(cls => 
+                    `<span class="badge class">${cls}: ${scenario.status.by_class[cls]}</span>`
+                  ).join('')}
+                </div>
+                ${scenario.status.last_updated 
+                  ? `<div class="last-updated">Last updated: ${new Date(scenario.status.last_updated).toLocaleDateString()}</div>`
+                  : ''
+                }
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function openScenario(scenarioName) {
+        window.location.href = `/annotate/${encodeURIComponent(scenarioName)}`;
+      }
+
+      function filterScenarios(query) {
+        const filtered = allScenarios.filter(scenario => 
+          scenario.name.toLowerCase().includes(query.toLowerCase())
+        );
+        renderScenarios(filtered);
+      }
+
+      searchInput.addEventListener('input', (e) => {
+        filterScenarios(e.target.value);
+      });
+      
+      refreshUserStats.addEventListener('click', loadUserStats);
+
+      loadScenarios();
+      loadProgress(); // Load progress on page load
+      loadUserStats(); // Load user stats on page load
+    </script>
+  </body>
+</html>

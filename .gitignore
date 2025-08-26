@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+
+# Virtual env
+.venv/
+venv/
+ENV/
+
+# Local data and users
+data/
+users.json
+
+# Node/JS
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Tunnel logs
+.localhost.run.log
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+
+# Build / cache
+.cache/
+.pytest_cache/
+
+
